@@ -1,11 +1,7 @@
-import {
-  access,
-  constants,
-  copyFileSync,
-  mkdir,
-  readdirSync,
-  writeFileSync,
-} from 'fs';
+import { access, constants, copyFileSync, mkdir, readdirSync } from 'fs';
+import { EOL } from 'os';
+import { execSync } from 'child_process';
+import writeJson from '@afoot/write-json';
 import { basename, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -52,6 +48,8 @@ const generateSourceDirectories = () => {
   const source = 'src';
   const sourceDirs = ['i', 'inc', 'scripts', 'styles'];
 
+  console.log('Generating directories', EOL);
+
   sourceDirs.forEach((dir) => {
     const path = resolve(root, source, dir);
 
@@ -61,7 +59,7 @@ const generateSourceDirectories = () => {
           if (err) {
             console.log(err);
           }
-          console.log('Generating directory:', path);
+          console.log('Generated directory:', path);
         });
       }
     });
@@ -69,41 +67,12 @@ const generateSourceDirectories = () => {
 };
 
 const writePackageJson = () => {
-  let count = 0;
-  const dest = resolve(root, 'package.json');
-
-  const formattedString = JSON.stringify(packageObj).replace(
-    /(\{|\}|:|,)/g,
-    (match) => {
-      const tab = '\t';
-      const nl = '\r\n';
-
-      switch (match) {
-        case '{':
-          return `{${nl}${tab.repeat(++count)}`;
-          break;
-        case '}':
-          return `${nl}${tab.repeat(--count)}}`;
-          break;
-        case ':':
-          return `: `;
-          break;
-        default:
-          return `,${nl}${tab.repeat(count)}`;
-      }
-    }
-  );
-
-  try {
-    writeFileSync(dest, formattedString, { flag: 'w' });
-  } catch (err) {
-    if (!reportFileExists(err)) {
-      console.error(err);
-    }
-  }
+  console.log('Writing package.json', EOL);
+  writeJson('package.json', packageObj);
 };
 
 const copyFiles = () => {
+  console.log('Copying files', EOL);
   const filesDir = resolve(packageRoot, `files`);
   const files = readdirSync(filesDir);
 
@@ -122,6 +91,12 @@ const copyFiles = () => {
     });
 };
 
+const npmInstall = () => {
+  console.log('Installing NPM packages.', EOL);
+  execSync('npm i', { stdio: 'inherit' });
+  console.log();
+};
+
 const init = () => {
   if (root === packageRoot) {
     throw new Error('Do not run initializer on itself.');
@@ -130,6 +105,7 @@ const init = () => {
   generateSourceDirectories();
   copyFiles();
   writePackageJson();
+  npmInstall();
 };
 
 export default init;

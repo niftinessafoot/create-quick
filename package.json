@@ -4,7 +4,7 @@
   "description": "A gulp application to quickly test DOM experiments.",
   "bin": "./bin/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postversion": "git push && git push --tags"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +13,8 @@
   "files": [
     "./files",
     "./src"
-  ]
+  ],
+  "dependencies": {
+    "@afoot/write-json": "^0.1.3"
+  }
 }
