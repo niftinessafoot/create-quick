@@ -1,6 +1,6 @@
 {
   "name": "@afoot/create-quick",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A gulp application to quickly test DOM experiments.",
   "bin": "./bin/index.js",
   "scripts": {
