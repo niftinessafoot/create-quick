@@ -108,7 +108,7 @@ const copyFiles = () => {
 
         switch (code) {
           case 'EEXIST':
-            console.warn(`${dest} already exists.`);
+            console.warn(`${dest} already exists.`, EOL);
             break;
           default:
             console.error(err);
@@ -139,15 +139,23 @@ const npmInstall = (dependencies = [], flags = '') => {
  */
 const gitInit = () => {
   const defaultContent = `# ${basename(root)}`;
-  const readmePath = './README.md';
+  const readmePath = resolve('README.md');
+  const gitignorePath = resolve('.gitignore');
+
+  try {
+    writeFileSync(gitignorePath, 'dest', { flag: 'wx' });
+  } catch (err) {
+    console.warn(`${gitignorePath} already exists.`, EOL);
+  }
 
   try {
     writeFileSync(readmePath, defaultContent, { flag: 'wx' });
   } catch (err) {
-    console.warn(`README.md already exists.`);
+    console.warn(`${readmePath} already exists.`, EOL);
   }
 
   execSync('git init', { stdio: 'inherit' });
+  console.log(EOL);
 
   const commitCount = parseInt(
     execSync(`git rev-list --count --all`, {
@@ -159,6 +167,7 @@ const gitInit = () => {
   if (!commitCount) {
     execSync(`git add ${readmePath}`, { stdio: 'inherit' });
     execSync(`git commit -m "initial commit"`, { stdio: 'inherit' });
+    console.log(EOL);
   }
 };
 
