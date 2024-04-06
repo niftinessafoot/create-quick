@@ -1,4 +1,11 @@
-import { access, constants, copyFileSync, mkdir, readdirSync } from 'fs';
+import {
+  access,
+  constants,
+  copyFileSync,
+  mkdir,
+  readFileSync,
+  readdirSync,
+} from 'fs';
 import { EOL } from 'os';
 import { execSync } from 'child_process';
 import writeJson from '@afoot/write-json';
@@ -10,43 +17,54 @@ const packageRoot = resolve(dirname(__filename), '..');
 const root = resolve();
 
 // Generate package.json
-const devDependencies = {
-  gulp: '^4',
-  'gulp-babel': '^8',
-  'gulp-include': '^2',
-  'gulp-sass': '^5',
-  'gulp-uglify': '^3',
-  sass: '^1',
-};
+const devDependencies = [
+  'gulp@^4',
+  'gulp-babel@^8',
+  'gulp-include@^2',
+  'gulp-sass@^5',
+  'gulp-uglify@^3',
+  'sass@^1',
+];
 
-const packageObj = {
-  name: basename(root),
-  description: '',
-  version: '0.0.0',
+const overrides = {
   scripts: {
     start: 'gulp',
     build: 'gulp build',
   },
   type: 'module',
-  keywords: [],
-  author: '',
-  license: 'MIT',
-  ...{ devDependencies },
 };
 
-const reportFileExists = ({ code, dest, path }) => {
-  const isExisting = code === 'EEXIST';
+/**
+ * Generates default package.json and outputs the parsed JSON.
+ * @returns {Object} Contents of package.json
+ */
+const initNpm = () => {
+  execSync('npm init -y');
+  const str = readFileSync(resolve('package.json'), 'utf8');
+  const obj = JSON.parse(str);
 
-  if (isExisting) {
-    console.warn(`${dest ?? path} already exists.`);
-  }
-
-  return isExisting;
+  return obj;
 };
 
+/**
+ * Extends base package.json and rewrites the file.
+ */
+const writePackageJson = () => {
+  const baseJson = initNpm();
+
+  console.log('Writing package.json', EOL);
+
+  Object.assign(baseJson, overrides);
+  writeJson('package.json', baseJson);
+};
+
+/**
+ * Create default subdirectories in src file.
+ */
 const generateSourceDirectories = () => {
   const source = 'src';
   const sourceDirs = ['i', 'inc', 'scripts', 'styles'];
+  const rootIndex = root.length;
 
   console.log('Generating directories', EOL);
 
@@ -59,18 +77,19 @@ const generateSourceDirectories = () => {
           if (err) {
             console.log(err);
           }
-          console.log('Generated directory:', path);
+
+          const report = `.${path.substring(rootIndex)}`;
+          console.log('Generated directory:', report);
         });
       }
     });
   });
 };
 
-const writePackageJson = () => {
-  console.log('Writing package.json', EOL);
-  writeJson('package.json', packageObj);
-};
-
+/**
+ * Pulls contents of `files` from package and copies into target directory.
+ * Fails if the file already exists.
+ */
 const copyFiles = () => {
   console.log('Copying files', EOL);
   const filesDir = resolve(packageRoot, `files`);
@@ -84,17 +103,33 @@ const copyFiles = () => {
       try {
         copyFileSync(source, dest, constants.COPYFILE_EXCL);
       } catch (err) {
-        if (!reportFileExists(err)) {
-          console.error(err);
+        const { code } = err;
+
+        switch (code) {
+          case 'EEXIST':
+            console.warn(`${dest} already exists.`);
+            break;
+          default:
+            console.error(err);
         }
       }
     });
 };
 
-const npmInstall = () => {
-  console.log('Installing NPM packages.', EOL);
-  execSync('npm i', { stdio: 'inherit' });
-  console.log();
+/**
+ *
+ * @param {(Array | string)} dependencies Dependencies to install.
+ * @param {string} flags Args passed to `npm install. e.g.: --save-dev`
+ */
+const npmInstall = (dependencies = [], flags = '') => {
+  console.log('Installing dependencies.', EOL);
+
+  const list = Array.isArray(dependencies)
+    ? dependencies.join(' ')
+    : dependencies;
+
+  execSync(`npm i ${list} ${flags}`, { stdio: 'inherit' });
+  console.log('');
 };
 
 const init = () => {
@@ -102,10 +137,10 @@ const init = () => {
     throw new Error('Do not run initializer on itself.');
   }
 
+  writePackageJson();
   generateSourceDirectories();
   copyFiles();
-  writePackageJson();
-  npmInstall();
+  npmInstall(devDependencies, '-D');
 };
 
 export default init;
