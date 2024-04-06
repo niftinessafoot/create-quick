@@ -5,6 +5,7 @@ import {
   mkdir,
   readFileSync,
   readdirSync,
+  writeFileSync,
 } from 'fs';
 import { EOL } from 'os';
 import { execSync } from 'child_process';
@@ -132,6 +133,38 @@ const npmInstall = (dependencies = [], flags = '') => {
   console.log('');
 };
 
+/**
+ * Initializes a git repo, generates a README, and commits the README
+ * as initial commit.
+ */
+const gitInit = () => {
+  const defaultContent = `# ${basename(root)}`;
+  const readmePath = './README.md';
+
+  try {
+    writeFileSync(readmePath, defaultContent, { flag: 'wx' });
+  } catch (err) {
+    console.warn(`README.md already exists.`);
+  }
+
+  execSync('git init', { stdio: 'inherit' });
+
+  const commitCount = parseInt(
+    execSync(`git rev-list --count --all`, {
+      encoding: 'utf8',
+    }),
+    10
+  );
+
+  if (!commitCount) {
+    execSync(`git add ${readmePath}`, { stdio: 'inherit' });
+    execSync(`git commit -m "initial commit"`, { stdio: 'inherit' });
+  }
+};
+
+/**
+ * create-quick initializer
+ */
 const init = () => {
   if (root === packageRoot) {
     throw new Error('Do not run initializer on itself.');
@@ -141,6 +174,7 @@ const init = () => {
   generateSourceDirectories();
   copyFiles();
   npmInstall(devDependencies, '-D');
+  gitInit();
 };
 
 export default init;
