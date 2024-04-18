@@ -19,7 +19,7 @@ const root = resolve();
 
 // Generate package.json
 const devDependencies = [
-  'gulp@^4',
+  'gulp@^5',
   'gulp-babel@^8',
   'gulp-include@^2',
   'gulp-sass@^5',
